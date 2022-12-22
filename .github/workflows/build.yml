@@ -1,0 +1,62 @@
+on:
+  workflow_call:
+    inputs:
+      extension:
+        type: boolean
+        required: true
+
+name: build
+
+jobs:
+  build:
+    if: ${{ !contains(github.event.head_commit.message, '[ci skip]') }}
+    runs-on: ${{ matrix.config.os }}
+    name: check on ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {os: macOS-latest, r: 'release'}
+        - {os: windows-latest, r: 'release'}
+        - {os: ubuntu-latest, r: 'devel', http-user-agent: 'release'}
+        - {os: ubuntu-latest, r: 'release', covr: 'yes'}
+        - {os: ubuntu-latest, r: 'oldrel'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      _R_CHECK_CRAN_INCOMING_REMOTE_: false
+      TINYTEX_INSTALLER: TinyTeX
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: ${{ matrix.config.r }}
+        http-user-agent: ${{ matrix.config.http-user-agent }}
+        use-public-rspm: true
+    - uses: r-lib/actions/setup-pandoc@v2
+    - uses: r-lib/actions/setup-tinytex@v2
+      if: ${{ inputs.extension == 'false' }}
+
+    - name: Add r-simmer/simmer to Remotes
+      if: ${{ inputs.extension == 'true' }}
+      run: |
+        echo "Remotes: r-simmer/simmer" >> DESCRIPTION
+
+    - name: Install package dependencies
+    - uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        extra-packages: any::rcmdcheck, any::covr
+        needs: check, coverage
+
+    - name: Check
+      uses: r-lib/actions/check-r-package@v2
+      with:
+        upload-snapshots: true
+
+    - name: Test coverage
+      if: ${{ success() && matrix.config.covr == 'yes' }}
+      run: covr::codecov()
+      shell: Rscript {0}

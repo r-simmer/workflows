@@ -3,7 +3,6 @@ on:
     inputs:
       extension:
         type: boolean
-        required: true
 
 name: build
 

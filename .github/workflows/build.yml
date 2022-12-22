@@ -38,10 +38,10 @@ jobs:
         use-public-rspm: true
     - uses: r-lib/actions/setup-pandoc@v2
     - uses: r-lib/actions/setup-tinytex@v2
-      if: ${{ inputs.extension == 'false' }}
+      if: ${{ !inputs.extension }}
 
     - name: Add r-simmer/simmer to Remotes
-      if: ${{ inputs.extension == 'true' }}
+      if: ${{ inputs.extension }}
       run: |
         echo "Remotes: r-simmer/simmer" >> DESCRIPTION
 

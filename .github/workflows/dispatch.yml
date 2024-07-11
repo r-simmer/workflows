@@ -1,0 +1,20 @@
+on: workflow_call
+
+name: dispatch
+
+jobs:
+  dispatch:
+    if: ${{ github.ref == 'refs/heads/master' }}
+    runs-on: ubuntu-latest
+    name: dispatch simmer.${{ matrix.repo }}
+
+    strategy:
+      matrix:
+        repo: ['plot', 'bricks']
+    
+    steps:
+    - uses: peter-evans/repository-dispatch@v3
+      with:
+        token: ${{ secrets.SIMMER_TOKEN }}
+        repository: r-simmer/simmer.${{ matrix.repo }}
+        event-type: simmer
